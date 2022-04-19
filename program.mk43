@@ -1,0 +1,4 @@
+Start(D) _ Redirect(R) Redirect(D) End
+_ _ _ _ _
+Set(43) _ Store(0) OpAdd(0) Print
+Redirect(R) Display Redirect(U) Redirect(R) Redirect(U)

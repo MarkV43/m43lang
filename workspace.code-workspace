@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "server"
+		},
+		{
+			"path": "inner"
+		},
+		{
+			"path": "www"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "m43lang-visual"
+	}
+}
