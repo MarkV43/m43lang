@@ -53,3 +53,8 @@ pub fn execute_code(code: String) {
 	let program = DynGrid::<Block>::from(code);
 	interpret(program, prompt, print_to_console);
 }
+
+#[wasm_bindgen]
+pub fn get_code_str(code: String) -> String {
+	DynGrid::<Block>::from(code).as_code()
+}

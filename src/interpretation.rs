@@ -722,38 +722,42 @@ pub fn interpret<F: Fn(&str) -> String, O: Fn(String) -> (), G: Grid<Block>>(cod
         panic!("No start block found");
     }
 
+    let mut none;
     while {
         let b = code.get(pos.0, pos.1).clone();
-        if b.is_none() {
+        none = b.is_none();
+        if none {
             true
         } else {
             block = b.unwrap();
             block != Block::End
         }
      } {
-        match block.clone() {
-            Block::Start(_) => {},
-            Block::Redirect(d) => direction = d,
-            Block::Store => storage[reg_pos] = register,
-            Block::Load => register = storage[reg_pos],
-            Block::MoveRight(n) => reg_pos += n,
-            Block::MoveLeft(n) => reg_pos -= n,
-            Block::Goto(n) => reg_pos = n,
-            Block::Set(v) => register = v,
-            Block::Save(n) => storage[reg_pos] = n,
-            Block::OpAdd => register += storage[reg_pos],
-            Block::OpSub => register -= storage[reg_pos],
-            Block::OpMul => register *= storage[reg_pos],
-            Block::OpDiv => register /= storage[reg_pos],
-            Block::CompLarger => register = if register > storage[reg_pos] { 1 } else { 0 },
-            Block::CompSmaller => register = if register < storage[reg_pos] { 1 } else { 0 },
-            Block::CompEqual => register = if register == storage[reg_pos] { 1 } else { 0 },
-            Block::Conditional(d1, d2) => direction = if register == 0 { d2 } else { d1 },
-            Block::Display => output(format!("{}", register)),
-            Block::Print => output(format!("{}", register as u8 as char)),
-            Block::Break => output("\n".to_string()),
-            Block::Input => register = input(&format!("{}", register)).parse().unwrap(),
-            Block::End => break,
+        if !none {
+            match block.clone() {
+                Block::Start(_) => {},
+                Block::Redirect(d) => direction = d,
+                Block::Store => storage[reg_pos] = register,
+                Block::Load => register = storage[reg_pos],
+                Block::MoveRight(n) => reg_pos += n,
+                Block::MoveLeft(n) => reg_pos -= n,
+                Block::Goto(n) => reg_pos = n,
+                Block::Set(v) => register = v,
+                Block::Save(n) => storage[reg_pos] = n,
+                Block::OpAdd => register += storage[reg_pos],
+                Block::OpSub => register -= storage[reg_pos],
+                Block::OpMul => register *= storage[reg_pos],
+                Block::OpDiv => register /= storage[reg_pos],
+                Block::CompLarger => register = if register > storage[reg_pos] { 1 } else { 0 },
+                Block::CompSmaller => register = if register < storage[reg_pos] { 1 } else { 0 },
+                Block::CompEqual => register = if register == storage[reg_pos] { 1 } else { 0 },
+                Block::Conditional(d1, d2) => direction = if register == 0 { d2 } else { d1 },
+                Block::Display => output(format!("{}", register)),
+                Block::Print => output(format!("{}", register as u8 as char)),
+                Block::Break => output("\n".to_string()),
+                Block::Input => register = input(&format!("{}", register)).parse().unwrap(),
+                Block::End => break,
+            }
         }
 
         match direction {
