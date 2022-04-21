@@ -1,9 +1,13 @@
 [package]
-name = "m43lang-visual"
+name = "m43lang_derive"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-m43lang_derive = { path = "./m43lang_derive" }
+syn = { version = "^1.0", features = ["extra-traits"] }
+quote = "^1.0"
+
+[lib]
+proc-macro = true

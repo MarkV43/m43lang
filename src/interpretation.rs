@@ -2,12 +2,27 @@ use std::fmt::Debug;
 use std::io::{Write, BufWriter};
 use std::fs::OpenOptions;
 use std::process::Command;
+use std::str::FromStr;
+pub use m43lang_derive::AsCode;
+use m43lang_derive::Decodable;
 
 pub trait AsCode {
     fn as_code(&self) -> String;
 
     fn as_code_depth(&self, _depth: u8) -> String {
         self.as_code()
+    }
+}
+
+impl AsCode for usize {
+    fn as_code(&self) -> String {
+        format!("{}", self)
+    }
+}
+
+impl AsCode for u64 {
+    fn as_code(&self) -> String {
+        format!("{}", self)
     }
 }
 
@@ -20,7 +35,29 @@ impl<T: AsCode> AsCode for Option<T> {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+pub trait Decodable {
+    fn decode<'a, I: Iterator<Item = &'a str>>(iter: &mut I) -> Self;
+
+    fn treat_inp(inp: &str) -> &str {
+        if inp.chars().last().unwrap_or_default() == ')' {
+            &inp[..inp.len() - 1]
+        } else {
+            inp
+        }
+    }
+}
+
+impl<F, E> Decodable for F
+where 
+    F: FromStr<Err = E>,
+    E: Debug,
+{
+    fn decode<'a, I: Iterator<Item = &'a str>>(iter: &mut I) -> Self {
+        Self::treat_inp(iter.next().unwrap()).parse().unwrap()
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Copy, Debug, AsCode, Decodable)]
 pub enum Direction {
     Up,
     Down,
@@ -28,7 +65,7 @@ pub enum Direction {
     Right,
 }
 
-impl AsCode for Direction {
+/* impl AsCode for Direction {
     fn as_code(&self) -> String {
         match self {
             Direction::Up => "Direction::Up",
@@ -37,7 +74,7 @@ impl AsCode for Direction {
             Direction::Right => "Direction::Right",
         }.to_string()
     }
-}
+} */
 
 type Index = usize;
 type Value = u64;
@@ -46,7 +83,7 @@ pub trait IsStart {
     fn is_start(&self) -> bool;
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, AsCode, Decodable)]
 pub enum Block {
     Start(Direction),
     Redirect(Direction),
@@ -72,7 +109,61 @@ pub enum Block {
     End,
 }
 
-impl AsCode for Block {
+/* impl Block {
+    pub fn decode<'a, I: Iterator<Item = &'a str>>(iter: &mut I) -> Option<Self> {
+        match iter.next().unwrap() {
+            "Start" => Some(Block::Start(match iter.next().unwrap().chars().next().unwrap() {
+                'U' => Direction::Up,
+                'D' => Direction::Down,
+                'L' => Direction::Left,
+                'R' => Direction::Right,
+                _ => panic!("Invalid direction"),
+            })),
+            "Redirect" => Some(Block::Redirect(match iter.next().unwrap().chars().next().unwrap() {
+                'U' => Direction::Up,
+                'D' => Direction::Down,
+                'L' => Direction::Left,
+                'R' => Direction::Right,
+                _ => panic!("Invalid direction"),
+            })),
+            "Store" => Some(Block::Store),
+            "Load" => Some(Block::Load),
+            "MoveRight" => Some(Block::MoveRight(treat_inp(iter.next().unwrap()).parse().unwrap())),
+            "MoveLeft" => Some(Block::MoveLeft(treat_inp(iter.next().unwrap()).parse().unwrap())),
+            "Goto" => Some(Block::Goto(treat_inp(iter.next().unwrap()).parse().unwrap())),
+            "Set" => Some(Block::Set(treat_inp(iter.next().unwrap()).parse().unwrap())),
+            "Save" => Some(Block::Save(treat_inp(iter.next().unwrap()).parse().unwrap())),
+            "OpAdd" => Some(Block::OpAdd),
+            "OpSub" => Some(Block::OpSub),
+            "OpMul" => Some(Block::OpMul),
+            "OpDiv" => Some(Block::OpDiv),
+            "CompLarger" => Some(Block::CompLarger),
+            "CompSmaller" => Some(Block::CompSmaller),
+            "CompEqual" => Some(Block::CompEqual),
+            "Conditional" => Some(Block::Conditional(match iter.next().unwrap().chars().next().unwrap() {
+                'U' => Direction::Up,
+                'D' => Direction::Down,
+                'L' => Direction::Left,
+                'R' => Direction::Right,
+                _ => panic!("Invalid direction"),
+            }, match iter.next().unwrap().chars().next().unwrap() {
+                'U' => Direction::Up,
+                'D' => Direction::Down,
+                'L' => Direction::Left,
+                'R' => Direction::Right,
+                _ => panic!("Invalid direction"),
+            })),
+            "Display" => Some(Block::Display),
+            "Print" => Some(Block::Print),
+            "Break" => Some(Block::Break),
+            "Input" => Some(Block::Input),
+            "End" => Some(Block::End),
+            _ => panic!("Invalid block"),
+        }
+    }
+} */
+
+/* impl AsCode for Block {
     fn as_code(&self) -> String {
         match self {
             Block::Start(dir) => format!("Block::Start({})", dir.as_code()),
@@ -99,7 +190,7 @@ impl AsCode for Block {
             Block::End => "Block::End".to_string(),
         }
     }
-}
+} */
 
 impl IsStart for Block {
     fn is_start(&self) -> bool {
@@ -433,14 +524,6 @@ impl<T: Clone + Debug, const S: usize> From<&[Option<T>]> for ConstGrid<T, S> {
 
 impl<const S: usize> From<String> for ConstGrid<Block, S> {
     fn from(str: String) -> Self {
-        fn treat_inp(inp: &str) -> &str {
-            if inp.chars().last().unwrap_or_default() == ')' {
-                &inp[..inp.len() - 1]
-            } else {
-                inp
-            }
-        }
-
         let lines = str
             .lines()
             .into_iter()
@@ -452,55 +535,7 @@ impl<const S: usize> From<String> for ConstGrid<Block, S> {
                             None
                         } else {
                             let mut iter = k.split(&['(', ','][..]);
-                            match iter.next().unwrap() {
-                                "Start" => Some(Block::Start(match iter.next().unwrap().chars().next().unwrap() {
-                                    'U' => Direction::Up,
-                                    'D' => Direction::Down,
-                                    'L' => Direction::Left,
-                                    'R' => Direction::Right,
-                                    _ => panic!("Invalid direction"),
-                                })),
-                                "Redirect" => Some(Block::Redirect(match iter.next().unwrap().chars().next().unwrap() {
-                                    'U' => Direction::Up,
-                                    'D' => Direction::Down,
-                                    'L' => Direction::Left,
-                                    'R' => Direction::Right,
-                                    _ => panic!("Invalid direction"),
-                                })),
-                                "Store" => Some(Block::Store),
-                                "Load" => Some(Block::Load),
-                                "MoveRight" => Some(Block::MoveRight(treat_inp(iter.next().unwrap()).parse().unwrap())),
-                                "MoveLeft" => Some(Block::MoveLeft(treat_inp(iter.next().unwrap()).parse().unwrap())),
-                                "Goto" => Some(Block::Goto(treat_inp(iter.next().unwrap()).parse().unwrap())),
-                                "Set" => Some(Block::Set(treat_inp(iter.next().unwrap()).parse().unwrap())),
-                                "Save" => Some(Block::Save(treat_inp(iter.next().unwrap()).parse().unwrap())),
-                                "OpAdd" => Some(Block::OpAdd),
-                                "OpSub" => Some(Block::OpSub),
-                                "OpMul" => Some(Block::OpMul),
-                                "OpDiv" => Some(Block::OpDiv),
-                                "CompLarger" => Some(Block::CompLarger),
-                                "CompSmaller" => Some(Block::CompSmaller),
-                                "CompEqual" => Some(Block::CompEqual),
-                                "Conditional" => Some(Block::Conditional(match iter.next().unwrap().chars().next().unwrap() {
-                                    'U' => Direction::Up,
-                                    'D' => Direction::Down,
-                                    'L' => Direction::Left,
-                                    'R' => Direction::Right,
-                                    _ => panic!("Invalid direction"),
-                                }, match iter.next().unwrap().chars().next().unwrap() {
-                                    'U' => Direction::Up,
-                                    'D' => Direction::Down,
-                                    'L' => Direction::Left,
-                                    'R' => Direction::Right,
-                                    _ => panic!("Invalid direction"),
-                                })),
-                                "Display" => Some(Block::Display),
-                                "Print" => Some(Block::Print),
-                                "Break" => Some(Block::Break),
-                                "Input" => Some(Block::Input),
-                                "End" => Some(Block::End),
-                                _ => None,
-                            }
+                            Some(Block::decode(&mut iter))
                         }
                     }).collect::<Vec<_>>()
             }).collect::<Vec<_>>();
@@ -574,14 +609,6 @@ impl<T: Clone + Debug> From<&[Option<T>]> for DynGrid<T> {
 
 impl From<String> for DynGrid<Block> {
     fn from(str: String) -> Self {
-        fn treat_inp(inp: &str) -> &str {
-            if inp.chars().last().unwrap_or_default() == ')' {
-                &inp[..inp.len() - 1]
-            } else {
-                inp
-            }
-        }
-
         let lines = str
             .lines()
             .into_iter()
@@ -593,55 +620,7 @@ impl From<String> for DynGrid<Block> {
                             None
                         } else {
                             let mut iter = k.split(&['(', ','][..]);
-                            match iter.next().unwrap() {
-                                "Start" => Some(Block::Start(match iter.next().unwrap().chars().next().unwrap() {
-                                    'U' => Direction::Up,
-                                    'D' => Direction::Down,
-                                    'L' => Direction::Left,
-                                    'R' => Direction::Right,
-                                    _ => panic!("Invalid direction"),
-                                })),
-                                "Redirect" => Some(Block::Redirect(match iter.next().unwrap().chars().next().unwrap() {
-                                    'U' => Direction::Up,
-                                    'D' => Direction::Down,
-                                    'L' => Direction::Left,
-                                    'R' => Direction::Right,
-                                    _ => panic!("Invalid direction"),
-                                })),
-                                "Store" => Some(Block::Store),
-                                "Load" => Some(Block::Load),
-                                "MoveRight" => Some(Block::MoveRight(treat_inp(iter.next().unwrap()).parse().unwrap())),
-                                "MoveLeft" => Some(Block::MoveLeft(treat_inp(iter.next().unwrap()).parse().unwrap())),
-                                "Goto" => Some(Block::Goto(treat_inp(iter.next().unwrap()).parse().unwrap())),
-                                "Set" => Some(Block::Set(treat_inp(iter.next().unwrap()).parse().unwrap())),
-                                "Save" => Some(Block::Save(treat_inp(iter.next().unwrap()).parse().unwrap())),
-                                "OpAdd" => Some(Block::OpAdd),
-                                "OpSub" => Some(Block::OpSub),
-                                "OpMul" => Some(Block::OpMul),
-                                "OpDiv" => Some(Block::OpDiv),
-                                "CompLarger" => Some(Block::CompLarger),
-                                "CompSmaller" => Some(Block::CompSmaller),
-                                "CompEqual" => Some(Block::CompEqual),
-                                "Conditional" => Some(Block::Conditional(match iter.next().unwrap().chars().next().unwrap() {
-                                    'U' => Direction::Up,
-                                    'D' => Direction::Down,
-                                    'L' => Direction::Left,
-                                    'R' => Direction::Right,
-                                    _ => panic!("Invalid direction"),
-                                }, match iter.next().unwrap().chars().next().unwrap() {
-                                    'U' => Direction::Up,
-                                    'D' => Direction::Down,
-                                    'L' => Direction::Left,
-                                    'R' => Direction::Right,
-                                    _ => panic!("Invalid direction"),
-                                })),
-                                "Display" => Some(Block::Display),
-                                "Print" => Some(Block::Print),
-                                "Break" => Some(Block::Break),
-                                "Input" => Some(Block::Input),
-                                "End" => Some(Block::End),
-                                _ => None,
-                            }
+                            Some(Block::decode(&mut iter))
                         }
                     }).collect::<Vec<_>>()
             }).collect::<Vec<_>>();
@@ -862,4 +841,27 @@ pub fn execute_code(code: String) {
         .expect("Unexpected error while compiling wasm");
 
     assert!(status.success());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const PROGRAM: &'static str = "Redirect(D) Store Set(1) Goto(4) Start(L) _ _ _ _ _ _ _ _ _ _
+Goto(0) _ _ _ _ _ _ _ _ _ _ _ _ _ _
+Set(64) _ _ _ _ _ _ _ _ _ _ _ _ _ _
+Store _ _ _ _ _ _ _ _ _ _ _ _ _ _
+MoveRight(2) _ _ _ _ _ _ _ _ _ _ _ _ _ _
+Store _ _ _ _ _ _ _ _ _ _ _ _ _ _
+Redirect(R) MoveLeft(1) Set(1) Store _ _ _ _ _ _ _ _ Goto(3) Load Redirect(D)
+_ Redirect(D) MoveLeft(1) Load MoveRight(2) Store MoveLeft(1) Load MoveLeft(1) Store MoveRight(1) OpAdd MoveRight(1) Display Redirect(L)
+_ Store _ _ _ _ _ _ _ _ _ _ _ _ Load
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ Goto(3)
+_ Redirect(R) _ Goto(0) Load MoveRight(2) Break _ MoveLeft(2) Load MoveRight(1) OpSub MoveLeft(1) Store Conditional(U,D)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ End";
+
+    #[test]
+    fn test_compile() {
+        let program = DynGrid::<Block>::from(PROGRAM.to_string());
+    }
 }

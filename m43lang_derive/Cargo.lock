@@ -3,13 +3,6 @@
 version = 3
 
 [[package]]
-name = "m43lang-visual"
-version = "0.1.0"
-dependencies = [
- "m43lang_derive",
-]
-
-[[package]]
 name = "m43lang_derive"
 version = "0.1.0"
 dependencies = [
