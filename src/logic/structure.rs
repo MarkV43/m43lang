@@ -79,6 +79,8 @@ pub enum Block {
     Goto(Index),
     Set(Value),
     Save(Value),
+    Increment(Value),
+    Decrement(Value),
     OpAdd,
     OpSub,
     OpMul,

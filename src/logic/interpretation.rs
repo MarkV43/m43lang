@@ -4,7 +4,7 @@ use std::fs::OpenOptions;
 use std::process::Command;
 pub use m43lang_derive::AsCode;
 
-const STORAGE_SIZE: usize = 1024;
+pub const STORAGE_SIZE: usize = 1024;
 
 pub trait Interpretable {
     fn interpret<I: FnMut(&str) -> String, O: FnMut(String)>(&self, input: I, output: O) -> u8;
@@ -81,6 +81,8 @@ impl Executable for Block {
             Block::Goto(n) => s.pos = *n,
             Block::Set(v) => s.val = *v,
             Block::Save(n) => s.storage[s.pos] = *n,
+            Block::Increment(v) => s.val += *v,
+            Block::Decrement(v) => s.val -= *v,
             Block::OpAdd => s.val += s.storage[s.pos],
             Block::OpSub => s.val -= s.storage[s.pos],
             Block::OpMul => s.val *= s.storage[s.pos],
