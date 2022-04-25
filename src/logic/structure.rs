@@ -74,6 +74,7 @@ pub enum Block {
     Redirect(Direction),
     Store,
     Load,
+    Swap,
     MoveRight(Index),
     MoveLeft(Index),
     Goto(Index),

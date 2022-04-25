@@ -76,6 +76,7 @@ impl Executable for Block {
             Block::Redirect(d) => s.dir = *d,
             Block::Store => s.storage[s.pos] = s.val,
             Block::Load => s.val = s.storage[s.pos],
+            Block::Swap => std::mem::swap(&mut s.val, &mut s.storage[s.pos]),
             Block::MoveRight(n) => s.pos += *n,
             Block::MoveLeft(n) => s.pos -= *n,
             Block::Goto(n) => s.pos = *n,
