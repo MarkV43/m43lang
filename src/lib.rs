@@ -1,50 +1,37 @@
-mod interpretation;
-pub use interpretation::*;
-
-/* use m43lang_derive::{AsCode, Decodable};
-
-pub trait AsCode {
-    fn as_code(&self) -> String;
-
-    fn as_code_depth(&self, _depth: u8) -> String {
-        self.as_code()
-    }
-}
-
-pub trait Decodable {
-    fn decode<'a, I: Iterator<Item = &'a str>>(iter: &mut I) -> Self;
-}
-
-#[derive(PartialEq, Eq, Debug, AsCode, Decodable)]
-enum Teste {
-    Alpha,
-    Beta(Hue),
-    Gamma(Hue, Hue),
-}
-
-#[derive(PartialEq, Eq, Debug, AsCode, Decodable)]
-enum Hue {
-    H,
-    S,
-    L,
-}
+pub mod logic;
 
 #[cfg(test)]
 mod tests {
+    use crate::logic::interpretation::*;
 
-    use super::*;
+    use super::logic::structure::*;
+
+    const PROGRAM: &'static str = "Redirect(D) Store Set(1) Goto(4) Start(L) _ _ _ _ _ _ _ _ _ _
+Goto(0) _ _ _ _ _ _ _ _ _ _ _ _ _ _
+Set(64) _ _ _ _ _ _ _ _ _ _ _ _ _ _
+Store _ _ _ _ _ _ _ _ _ _ _ _ _ _
+MoveRight(2) _ _ _ _ _ _ _ _ _ _ _ _ _ _
+Store _ _ _ _ _ _ _ _ _ _ _ _ _ _
+Redirect(R) MoveLeft(1) Set(1) Store _ _ _ _ _ _ _ _ Goto(3) Load Redirect(D)
+_ Redirect(D) MoveLeft(1) Load MoveRight(2) Store MoveLeft(1) Load MoveLeft(1) Store MoveRight(1) OpAdd MoveRight(1) Display Redirect(L)
+_ Store _ _ _ _ _ _ _ _ _ _ _ _ Load
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ Goto(3)
+_ Redirect(R) _ Goto(0) Load MoveRight(2) Break _ MoveLeft(2) Load MoveRight(1) OpSub MoveLeft(1) Store Conditional(U,D)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ End";
 
     #[test]
-    fn test_as_code() {
-        assert_eq!(Teste::Alpha.as_code(), "Teste::Alpha");
-        assert_eq!(Teste::Beta(Hue::S).as_code(), "Teste::Beta(Hue::S)");
-        assert_eq!(Teste::Gamma(Hue::H, Hue::L).as_code(), "Teste::Gamma(Hue::H, Hue::L)");
+    fn test_read() {
+        assert!(std::panic::catch_unwind(|| DynGrid::<Block>::from(PROGRAM.to_string())).is_ok());
     }
 
     #[test]
-    fn test_decodable() {
-        assert_eq!(Teste::decode(&mut vec!["A"].into_iter()), Teste::Alpha);
-        assert_eq!(Teste::decode(&mut vec!["Beta", "S"].into_iter()), Teste::Beta(Hue::S));
-        assert_eq!(Teste::decode(&mut vec!["G", "H", "L"].into_iter()), Teste::Gamma(Hue::H, Hue::L));
+    fn test_debug() {
+        let grid = DynGrid::<Block>::from(PROGRAM.to_string());
+        let mut str = String::new();
+        let mut debugger = GridDebugger::new(grid, |_| "0".to_string(), |s| {
+            str.push_str(&s);
+        }, vec![(0, 0)]);
+
+        debugger.run().expect("Failed to run debugger");
     }
-} */
+}

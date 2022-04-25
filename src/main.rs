@@ -1,4 +1,4 @@
-use std::fs;
+/* use std::fs;
 
 #[allow(dead_code)]
 mod interpretation;
@@ -19,3 +19,8 @@ fn main() {
 
     compile(grid);
 }
+ */
+
+ fn main() {
+     println!("Hello World!");
+ }
