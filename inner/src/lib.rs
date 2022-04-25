@@ -73,8 +73,8 @@ pub struct M43State {
 	pub dir: char,
 	pub pos: Index,
 	pub val: Value,
+	coords: (usize, usize),
 	storage: [Value; STORAGE_SIZE],
-	coords: (usize, usize)
 }
 
 #[wasm_bindgen]
@@ -90,6 +90,10 @@ impl M43State {
 	pub fn get_coords_y(&self) -> usize {
 		self.coords.1
 	}
+
+	pub fn get_storage_size(&self) -> usize {
+		STORAGE_SIZE
+	}
 }
 
 #[wasm_bindgen]
@@ -102,7 +106,8 @@ impl M43Debugger {
 			program,
 			prompt as fn(&str) -> String,
 			print_to_console as fn(String),
-			breaks);
+			breaks,
+		);
 
 		Self { debugger }
 	}
